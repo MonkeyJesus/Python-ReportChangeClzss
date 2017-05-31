@@ -4,7 +4,7 @@ import MySQLdb
 from DBUtils.PooledDB import PooledDB
 
 #5为连接池里的最少连接数
-reportPool = PooledDB(MySQLdb,5,host='114.215.111.29',user='yjw0223',passwd='f9a<)6hh>0pP',db='fzreport',port=3314, charset="utf8")
+reportPool = PooledDB(MySQLdb,5,host='',user='',passwd='',db='',port=3306, charset="utf8")
 
 #根据schoolId 与 分表策略算出 具体分表
 def getTableNumBySchoolId(schoolId):
@@ -60,7 +60,9 @@ def updateExamResultStatusTo5(schoolId,examId,studentInfoMap):
         print "studentInfoMap 不是传的 字典 类型"
         return
 
+    #获取数据库链接
     reportConn = reportPool.connection()
+    #获取游标
     cur = reportConn.cursor()
 
     SQL = "update exam_result_" + str(getTableNumBySchoolId(schoolId)) + " set status = 5 where schoolId = " + str(schoolId) + " and examId = " + str(examId)
@@ -86,7 +88,7 @@ def updateExamResultStatusTo5(schoolId,examId,studentInfoMap):
             except:
                 reportConn.rollback()
 
-    print row_num
+    print "updateExamResultStatusTo5 此次共更新记录数：" + str(row_num)
     #关闭游标
     cur.close()
     #关闭连接
@@ -103,6 +105,14 @@ def updateExamResultStudentInfo(schoolId,examId,studentInfoBAccountOrg,studentIn
         print "BAccountOrg 中的学生个数与 ExamResult 中的学生不同"
         return
 
+    # 获取数据库链接
+    reportConn = reportPool.connection()
+    # 获取游标
+    cur = reportConn.cursor()
+
+    # 记录总影响的条数
+    row_num = 0
+
     SQL = "update exam_result_" + str(getTableNumBySchoolId(schoolId)) + " set clzssId = %d , clzssName = '%s' , subjectId = %d , subjectName = '%s' where schoolId = %d and examId = %d" \
                                                                          " and studentId = %d and clzssId = %d"
 
@@ -116,8 +126,18 @@ def updateExamResultStudentInfo(schoolId,examId,studentInfoBAccountOrg,studentIn
         oldClzssId = studentInfoExamResult[studentId]
 
         SQL = SQL % (nowClzssId,nowClzssName,nowSubjectId,nowSubjectName,schoolId,examId,studentId,oldClzssId)
-
         print SQL
+
+        # try:
+        #     i = cur.execute(SQL)
+        #     row_num += i
+        #     reportConn.commit()
+        # except:
+        #     #出异常回归
+        #     reportConn.rollback()
+
+    cur.close
+    reportConn.close()
     return
 
 studentInfoBAccountOrg = {1250311:[32553,"1班" ,123 ,"数学"]}
