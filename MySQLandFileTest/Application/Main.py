@@ -28,9 +28,13 @@ if not studentExamResultToSetStatusTo5:
     print "没有学生在多个班中个上传过成绩"
 else:
     # 将需要置缺考的学生成绩 status 置为 5
+    print ""
+    print ""
     print "=================================================================置缺考开始========================================================================="
     updateExamResultStatusTo5(schoolId, examId, studentExamResultToSetStatusTo5)
     print "=================================================================置缺考结束========================================================================="
+    print ""
+    print ""
 
 
 #根据 schoolId 和 examId 从 exam_result 表中获取学生上传的成绩的组织信息，返回学生信息字典
@@ -54,7 +58,10 @@ if not studentExamResultClzssInfo:
 
 
 #将需要置缺考的学生成绩 status 置为 5
-print "/n"
+print ""
+print ""
+print ""
+print ""
 print "==========================================================================================================================================================="
 print "=================================================================调班学生调整数据开始========================================================================="
 updateExamResultStudentInfo(schoolId,examId,studentInfoNow,studentExamResultClzssInfo)
