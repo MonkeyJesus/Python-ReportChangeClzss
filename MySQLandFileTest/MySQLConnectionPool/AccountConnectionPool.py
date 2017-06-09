@@ -7,6 +7,7 @@ from DBUtils.PooledDB import PooledDB
 from MySQLConnectionPool import accountPool
 
 #根据 schoolId 和 examId 从 exam_result 表中获取学生上传的成绩的组织信息，返回学生信息字典
+#item like {1032875L: [15827L, u'08\u73ed', 59612L, u'\u8bed\u6587']}
 def getStudentInfoNowByStudentIds(schoolId,subjectBaseId,year,studentIds):
 
     if isinstance(studentIds,list) is False or len(studentIds) < 1:

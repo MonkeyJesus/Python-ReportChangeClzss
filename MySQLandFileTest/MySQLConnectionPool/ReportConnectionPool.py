@@ -14,7 +14,7 @@ def getStudentExamInfoByExamId(examId,schoolId):
     cur = reportConn.cursor()
 
     tableNum = getTableNumBySchoolId(schoolId)
-    SQL = "select examId,studentId,clzssId,subjectId,createTime,subjectBaseId from exam_result_" + str(tableNum) + " where schoolId =" + str(schoolId) + " and examId =" + str(examId) + ";"
+    SQL = "select examId,studentId,clzssId,subjectId,createTime,subjectBaseId from exam_result_" + str(tableNum) + " where status != 5 and schoolId =" + str(schoolId) + " and examId =" + str(examId) + ";"
 
     result = cur.execute(SQL)
 
@@ -49,6 +49,8 @@ def updateExamResultStatusTo5(schoolId,examId,studentInfoMap):
 
     #记录总影响的条数
     row_num = 0
+    #记录需要修改的学生个数
+    sqlNum = 0
 
     #判断 studentInfoMap 的数据类型
     if isinstance(studentInfoMap,dict):
@@ -86,20 +88,22 @@ def updateExamResultStatusTo5(schoolId,examId,studentInfoMap):
             # except:
             #     reportConn.rollback()
 
-    print "updateExamResultStatusTo5 此次共更新记录数：" + str(row_num)
+        sqlNum += 1
+
+    print "updateExamResultStatusTo5 需要修改的学生个数为：" + str(sqlNum)
     #关闭游标
     cur.close()
     #关闭连接
     reportConn.close()
 
-
+#将exam_result表中调班的学生的班级信息调整为b_account_org 表中的最新成绩
 def updateExamResultStudentInfo(schoolId,examId,studentInfoBAccountOrg,studentInfoExamResult):
     # 判断 studentInfoMap 的数据类型
     if isinstance(studentInfoBAccountOrg, dict) is False or isinstance(studentInfoExamResult, dict) is False:
         print "studentInfo 不是传的 字典 类型"
         return
 
-    if studentInfoBAccountOrg.keys() != studentInfoExamResult.keys():
+    if len(studentInfoBAccountOrg.keys()) != len(studentInfoExamResult.keys()):
         print "BAccountOrg 中的学生个数与 ExamResult 中的学生不同"
         return
 
@@ -113,6 +117,8 @@ def updateExamResultStudentInfo(schoolId,examId,studentInfoBAccountOrg,studentIn
 
     SQL = "update exam_result_" + str(getTableNumBySchoolId(schoolId)) + " set clzssId = %d , clzssName = '%s' , subjectId = %d , subjectName = '%s' where schoolId = %d and examId = %d" \
                                                                          " and studentId = %d and clzssId = %d"
+
+    sqlNum = 0
 
     for studentId in studentInfoExamResult.keys():
         if isinstance(studentInfoBAccountOrg[studentId],list) is False or len(studentInfoBAccountOrg[studentId]) < 4:
@@ -128,7 +134,7 @@ def updateExamResultStudentInfo(schoolId,examId,studentInfoBAccountOrg,studentIn
 
         print SQL % (nowClzssId,nowClzssName,nowSubjectId,nowSubjectName,schoolId,examId,studentId,oldClzssId)
 
-
+        sqlNum += 1
         # try:
         #     i = cur.execute(SQL % (nowClzssId,nowClzssName,nowSubjectId,nowSubjectName,schoolId,examId,studentId,oldClzssId))
         #     row_num += i
@@ -139,6 +145,8 @@ def updateExamResultStudentInfo(schoolId,examId,studentInfoBAccountOrg,studentIn
 
     cur.close
     reportConn.close()
+
+    print "updateExamResultStudentInfo 需要修改的学生个数为：" + str(sqlNum)
     return
 
 
@@ -154,7 +162,7 @@ def sortDateTime(l1,l2):
 
 #获取需要置为缺考的学生信息
 #item like {1250261L: [32543L, 32548L]}
-def getStudentExamResultToSetStatusTo5(studentExamResultDict):
+def getStudentExamResultToSetStatusTo5(studentExamResultDict,studentInfoNow):
 
     returnDict = {}
 
@@ -162,6 +170,14 @@ def getStudentExamResultToSetStatusTo5(studentExamResultDict):
         return
 
     for studentId in studentExamResultDict.keys():
+
+        nowClzssId = studentInfoNow[studentId][0]
+
+        #记录成绩结果集中有没有现班级：
+        #有，保留现班级
+        #无，保留最新的班级成绩
+        flag = False;
+
         infoList = studentExamResultDict[studentId]
         if isinstance(infoList,list) is False or len(infoList) < 1:
             continue
@@ -170,9 +186,19 @@ def getStudentExamResultToSetStatusTo5(studentExamResultDict):
             # print "重复班级：" + str(infoList)
             clzssIds = []
 
-            infoList.sort(cmp=sortDateTime)
-            for infoItem in infoList[1:len(infoList)]:
-                clzssIds.append(infoItem[2])
+            for infoItem in infoList:
+                if nowClzssId == infoItem[2]:
+                    flag = True
+                    break
+
+            if flag:
+                for infoItem in infoList:
+                    if nowClzssId != infoItem[2]:
+                        clzssIds.append(infoItem[2])
+            else:
+                infoList.sort(cmp=sortDateTime)
+                for infoItem in infoList[1:len(infoList)]:
+                    clzssIds.append(infoItem[2])
 
             returnDict[studentId] = clzssIds
 

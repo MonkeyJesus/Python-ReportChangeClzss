@@ -5,8 +5,8 @@ import sys
 from MySQLandFileTest.MySQLConnectionPool.AccountConnectionPool import *
 from MySQLandFileTest.MySQLConnectionPool.ReportConnectionPool import *
 
-examId = 113181
-schoolId = 1999
+examId = 174728
+schoolId = 2025
 year = 2016
 subjectBaseId = 0
 
@@ -20,8 +20,18 @@ if not studentInfoExamResult:
     sys.exit()
 
 
+
+#根据 schoolId 和 examId 从 exam_result 表中获取学生上传的成绩的组织信息，返回学生信息字典
+studentIds = studentInfoExamResult.keys()
+studentInfoNow = getStudentInfoNowByStudentIds(schoolId,subjectBaseId,year,studentIds)
+print studentInfoNow
+
+if not studentInfoNow:
+    print "参数错误，未获取到学生信息"
+    sys.exit()
+
 #获取需要转为缺考的学生班级信息
-studentExamResultToSetStatusTo5 = getStudentExamResultToSetStatusTo5(studentInfoExamResult)
+studentExamResultToSetStatusTo5 = getStudentExamResultToSetStatusTo5(studentInfoExamResult,studentInfoNow)
 print studentExamResultToSetStatusTo5
 
 if not studentExamResultToSetStatusTo5:
@@ -37,14 +47,6 @@ else:
     print ""
 
 
-#根据 schoolId 和 examId 从 exam_result 表中获取学生上传的成绩的组织信息，返回学生信息字典
-studentIds = studentInfoExamResult.keys()
-studentInfoNow = getStudentInfoNowByStudentIds(schoolId,subjectBaseId,year,studentIds)
-print studentInfoNow
-
-if not studentInfoNow:
-    print "参数错误，未获取到学生信息"
-    sys.exit()
 
 
 # 获取需要需要保留的exam_result 中的学生班级信息
@@ -58,15 +60,13 @@ if not studentExamResultClzssInfo:
 
 
 #将需要置缺考的学生成绩 status 置为 5
-print ""
-print ""
-print ""
-print ""
-print "==========================================================================================================================================================="
 print "=================================================================调班学生调整数据开始========================================================================="
 updateExamResultStudentInfo(schoolId,examId,studentInfoNow,studentExamResultClzssInfo)
 print "=================================================================调班学生调整数据结束========================================================================="
-print "==========================================================================================================================================================="
+
+
+
+
 
 
 
